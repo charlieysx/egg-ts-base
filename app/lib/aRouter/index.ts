@@ -324,7 +324,7 @@ function ArrContain (opt: {[key: string]: Function[]} | Function[]) {
                 for (let j = 0; j < keys.length; ++j) {
                     const funcList = opt[keys[j]] || [];
                     let dealResult = item[keys[j]];
-                    [ (val: any) => val, ...funcList ].forEach(func => (dealResult = func(dealResult, `${key}数组每项的${keys[i]}`)));
+                    [ (val: any) => val, ...funcList ].forEach(func => (dealResult = func(dealResult, `${key}数组每项的${keys[j]}`)));
                     obj[keys[j]] = dealResult;
                 }
                 result.push(obj);
@@ -412,12 +412,15 @@ function Headers (opt: {[key: string]: Function[]}) {
     };
 }
 
-function File (name: string, funcList: Function[]) {
+function File (name: string, funcList: Function[] = []) {
     return (target: any, value?: any, des?: PropertyDescriptor & ThisType<any> | undefined) => {
         return install(target, value, des, async (ctx: Context) => {
-            const file = ctx.request.files.find((item: EggFile) => item.field === name);
-            let dealResult = file;
-            [ (val: any) => val, ...funcList ].forEach(func => (dealResult = func(dealResult, `${name}文件`)));
+            let dealResult: any = null;
+            if (ctx.request.files) {
+                const file = ctx.request.files.find((item: EggFile) => item.field === name);
+                dealResult = file;
+                [ (val: any) => val, ...funcList ].forEach(func => (dealResult = func(dealResult, `${name}文件`)));
+            }
             ctx.filterFile = { file: dealResult };
         });
     };

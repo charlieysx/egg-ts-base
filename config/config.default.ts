@@ -134,6 +134,7 @@ export default (appInfo: EggAppInfo) => {
     
     config.multipart = {
         mode: 'file',
+        fileExtensions: [ '', 'txt' ]
     };
 
     config.cors = {

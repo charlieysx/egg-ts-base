@@ -14,16 +14,22 @@ export default class testController extends BaseController {
     }
 
     @GET('/auth')
-    @authUser()
+    @authUser() // 验证权限，失败直接抛错误
     public async auth() {
-        const { service: { test } } = this.ctx;
+        const {
+            service: { test },
+            jwtInfo: { userInfo } // 权限验证成功，这里就有用户信息
+        } = this.ctx;
         this.returnSuccess(await test.test.showData());
     }
 
     @GET('/auth2')
-    @authUser(true)
+    @authUser(true) // 验证权限，失败可跳过
     public async auth2() {
-        const { service: { test } } = this.ctx;
+        const {
+            service: { test },
+            jwtInfo: { userInfo }  // 验证成功有信息，否则为null
+        } = this.ctx;
         this.returnSuccess(await test.test.showData());
     }
 }
