@@ -1,3 +1,4 @@
+// 把query挂在model上
 const sequelizeModelContent = `
 interface Model {
     query(sql: string, options?: any): function;
@@ -65,7 +66,7 @@ module.exports = {
         model: {
             directory: 'app/model',
             modelMap: {
-                test: 'testModel',
+                test: 'testModel', // 每增加一个model目录，就在这里新增一个对应的映射关系，key为目录名，value为前面config里设置的对应的delegate
                 test2: 'test2Model'
             },
             generator: selfGenerator

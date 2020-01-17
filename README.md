@@ -1,5 +1,8 @@
 # egg-ts接口开发脚手架
 
+## 介绍
+[egg+typescript搭建后端项目](http://codebear.cn/article?id=4wtB6uVZm6l2pVJbasAKRW)
+
 ## 功能
 - 支持自动配置路由（根据目录路径以及装饰器注入）
 - 一键生成路由和service文件
