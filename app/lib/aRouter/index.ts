@@ -8,53 +8,49 @@ const moment = require('moment');
  * 路由注入
  */
 class ARouterHelper {
-    /**
-     * 临时存放controller以及路由
-     */
-    controllers: {
-        [key: string]: {
-        prefix?: string, // 前缀
-        target?: any, // 对应的class
-        routers: Array<{ // controller下的路由
-            handler: string, // 方法名
-            path: string, // 路由路径
-            method: RequestMethods // 请求方法
-        }>
-    }} = {};
+
+    targets: { [key: string]: any } = {};
 
     /**
      * 注入路由
      * @param router egg的路由
      */
     public injectRouter(router: Router) {
-        const keys = Object.keys(this.controllers);
+        const keys = Object.keys(this.targets);
         keys.forEach(key => {
-            const controller = this.controllers[key];
-            controller.routers.forEach(r => {
-                // 以前的写法是router.get('/xxx', xxx, controller.xxx.xxx);
-                // 这里直接批量注入，controller.prefix + r.path拼接公共前缀于路由路径
-                router[r.method](controller.prefix + r.path, async (ctx: Context) => {
-                    // 得到class实例
-                    const instance = new controller.target(ctx);
-                    // 获取class中使用的装饰器中间件
-                    const middlewares = controller.target.prototype._middlewares;
-                    if (middlewares) {
-                        // all是绑定在class上的，也就是下面所有的方法都需先经过all中间件
-                        const all = middlewares.all;
-                        for (let i = 0; i < all.length; ++i) {
-                            const func = all[i];
-                            await func(ctx);
+            const target = this.targets[key];
+            const controller = Reflect.getMetadata('controller', target);
+            const routerKeys: string[] = Reflect.getMetadataKeys(target);
+            routerKeys.forEach(routerKey => {
+                if (routerKey.startsWith('router_')) {
+                    const routerData = Reflect.getMetadata(routerKey, target);
+                    routerKey = routerKey.split('_')[1];
+                    // 以前的写法是router.get('/xxx', xxx, controller.xxx.xxx);
+                    // 这里直接批量注入，controller.prefix + routerData.path拼接公共前缀于路由路径
+                    console.log(routerData.method, controller.prefix + routerData.path);
+                    router[routerData.method](controller.prefix + routerData.path, async (ctx: Context) => {
+                        // 得到class实例
+                        const instance = new target(ctx);
+                        // 获取class中使用的装饰器中间件
+                        const middlewares = target.prototype._middlewares;
+                        if (middlewares) {
+                            // all是绑定在class上的，也就是下面所有的方法都需先经过all中间件
+                            const all = middlewares.all;
+                            for (let i = 0; i < all.length; ++i) {
+                                const func = all[i];
+                                await func(ctx);
+                            }
+                            // 这是方法自带的中间件
+                            const self = middlewares[routerData.handler] || [];
+                            for (let i = 0; i < self.length; ++i) {
+                                const func = self[i];
+                                await func(ctx);
+                            }
                         }
-                        // 这是方法自带的中间件
-                        const self = middlewares[r.handler] || [];
-                        for (let i = 0; i < self.length; ++i) {
-                            const func = self[i];
-                            await func(ctx);
-                        }
-                    }
-                    // 经过了所有中间件，最后才真正执行调用的方法
-                    await instance[r.handler]();
-                });
+                        // 经过了所有中间件，最后才真正执行调用的方法
+                        await instance[routerData.handler]();
+                    });
+                }
             });
         });
     }
@@ -83,16 +79,11 @@ function AController (prefix: string) {
     return (target: any) => {
         // 获取class名
         const key = target.aRouterGetName();
-        if (!aRouterHelper.controllers[key]) {
-            aRouterHelper.controllers[key] = {
-                target,
-                prefix,
-                routers: []
-            };
-        } else {
-            aRouterHelper.controllers[key].target = target;
-            aRouterHelper.controllers[key].prefix = prefix;
-        }
+        Reflect.defineMetadata('controller', {
+            target,
+            prefix
+        }, target);
+        aRouterHelper.targets[prefix + key] = target;
     };
 }
 
@@ -103,17 +94,11 @@ function AController (prefix: string) {
  */
 function request(path: string, method: RequestMethods) {
     return function (target: any, value: any, des: PropertyDescriptor & ThisType<any>) {
-        const key = target.constructor.toString().split(' ')[1];
-        if (!aRouterHelper.controllers[key]) {
-            aRouterHelper.controllers[key] = {
-                routers: []
-            };
-        }
-        aRouterHelper.controllers[key].routers.push({
+        Reflect.defineMetadata(`router_${path}`, {
             handler: value,
             path,
             method
-        });
+        }, target.constructor);
     };
 }
 
@@ -226,7 +211,7 @@ function String (value: any, key: string) {
     throw error.GENERAL.PARAM_ERROR(`${key} 必须为字符串`);
 }
 
-String.Default = function (defaultValue: number) {
+String.Default = function (defaultValue: string) {
     return (value: any, key: string) => {
         try {
             return this(value, key);
@@ -235,6 +220,17 @@ String.Default = function (defaultValue: number) {
         }
     };
 };
+
+String.Max = function (max: number) {
+    return (value: any, key: string) => {
+        value = this(value, key);
+        if (value.length > max) {
+            throw error.GENERAL.PARAM_ERROR(`${key} 最大长度为${max}个字符`);
+        }
+        return value;
+    };
+};
+
 
 function Float (value: any, key: string) {
     const regPos = /^\d+(\.\d+)?$/; // 非负浮点数
@@ -255,9 +251,12 @@ Float.Default = function (defaultValue: number) {
     };
 };
 
-function Time (format: string = '') {
+function Time (format: string = '', isMust: boolean = true) {
     return (value: any, key: string) => {
         try {
+            if (!isMust && !value) {
+                return '';
+            }
             if (!moment(value).isValid()) {
                 throw error.GENERAL.PARAM_ERROR(`${key} 必须为有效日期`);
             }

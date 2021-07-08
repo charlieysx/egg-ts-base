@@ -26,4 +26,39 @@ export default class BaseController extends Controller {
         }
         this.ctx.body = data;
     }
+
+    protected genExcelRows(header: Record<string, string>, dataList: any[]) {
+        let result = '';
+        dataList.forEach((data: any) => {
+            const keys = Object.getOwnPropertyNames(header);
+            keys.forEach(key => {
+                let cellContent = data[key] || '';
+                if (data[key] === 0) {
+                    cellContent = 0;
+                }
+                if (typeof cellContent === 'string') {
+                    cellContent = cellContent.replace(/,/g, '，');
+                }
+                // 加上\t可以防止数据被显示为科学计数法
+                if (header[key]) result += `"${cellContent}\t",`;
+            });
+            result += '\n';
+        });
+        return result;
+    }
+
+    protected returnExcel(header: Record<string, string>, list: any[], name: string) {
+        const content = this.genExcelRows(header, [ header, ...list ]);
+        this.ctx.state.filename = `${encodeURIComponent(name)}`;
+        this.ctx.state.extension = 'csv';
+        // 这样做可以防止中文乱码
+        const msExcelBuffer = Buffer.concat([
+            Buffer.from('\xEF\xBB\xBF', 'binary'), // BOM+utf8， 是office支持的格式
+            Buffer.from(content)
+        ]);
+        this.ctx.set('Content-disposition', `attachment; filename=${this.ctx.state.filename}.csv`);
+        this.ctx.set('content-type', `${this.ctx.state.filename}.csv; charset=utf-8`);
+        console.log('msExcelBuffer.toString("utf8")');
+        this.returnSuccess(msExcelBuffer.toString('utf8'), true);
+    }
 }

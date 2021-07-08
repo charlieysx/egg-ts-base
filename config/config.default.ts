@@ -32,7 +32,7 @@ export function getSqlConfig(options: sequelizeOptions | Options) {
         dialect: 'mysql',
         host: process.env.MYSQL_HOST || '127.0.0.1',
         username: process.env.MYSQL_USERNAME || 'root',
-        password: process.env.MYSQL_PASSWORD || 'root',
+        password: process.env.MYSQL_PASSWORD || '123456',
         port: 3306,
         timezone: '+08:00',
         define: {

@@ -1,7 +1,7 @@
 /**
  * 封装路由中间件装饰器注入，支持class和methods
  */
-export default (target: any, value: any, des: PropertyDescriptor & ThisType<any> | undefined, fn: Function) => {
+ export default (target: any, value: any, des: PropertyDescriptor & ThisType<any> | undefined, fn: Function) => {
     // 没有value，说明是作用于class
     if (value === undefined) {
         const middlewares = target.prototype._middlewares;
