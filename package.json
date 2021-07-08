@@ -25,10 +25,8 @@
         "new": "plop"
     },
     "dependencies": {
-        "@types/bluebird": "^3.5.29",
-        "@types/validator": "^10.11.3",
         "ali-oss": "^6.3.1",
-        "axios": "^0.19.0",
+        "axios": "^0.21.1",
         "cross-blob": "^1.2.0",
         "crypto": "^1.0.1",
         "egg": "^2.6.1",
@@ -53,13 +51,14 @@
     },
     "devDependencies": {
         "@types/ali-oss": "^6.0.4",
-        "@types/co": "^4.6.2",
+        "@types/bluebird": "^3.5.36",
         "@types/ioredis": "^4.14.2",
         "@types/jsonwebtoken": "^8.3.5",
         "@types/mocha": "^2.2.40",
         "@types/node": "^7.10.9",
         "@types/qs": "^6.9.0",
         "@types/supertest": "^2.0.0",
+        "@types/validator": "^10.11.3",
         "autod": "^3.0.1",
         "autod-egg": "^1.1.0",
         "egg-bin": "^4.11.0",
