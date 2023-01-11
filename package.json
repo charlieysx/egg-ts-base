@@ -36,7 +36,7 @@
         "egg-scripts": "^2.6.0",
         "egg-sequelize-ts": "^0.2.3-0",
         "ioredis": "^4.14.1",
-        "jsonwebtoken": "^8.5.1",
+        "jsonwebtoken": "^9.0.0",
         "md5js": "^1.0.7",
         "moment": "^2.24.0",
         "monk": "^7.1.1",
